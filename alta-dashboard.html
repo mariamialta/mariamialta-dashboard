@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alta — ყურადღების დაფა</title>
+<style>
+  :root{
+    --purple:#6B2C8F; --purple-dark:#4A1D63; --orange:#F5901F; --red:#E8412C; --magenta:#9C2694;
+    --bg:#F7F5FA; --card:#FFFFFF; --text:#241633; --muted:#7A6B87; --border:#E4DCEE;
+    --good:#1E8E5A; --bad:#D93A3A; --flagbg:#FDEDEB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,'Noto Sans Georgian',sans-serif;font-size:14px;}
+  h1,h2,h3{margin:0 0 4px 0;font-weight:700;}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 24px 60px;}
+  header.app{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background:var(--card);border-bottom:3px solid var(--purple);flex-wrap:wrap;}
+  header.app .brand{display:flex;align-items:center;gap:14px;}
+  header.app .logo-crop{width:234.35px;height:38px;overflow:hidden;position:relative;}
+  header.app .logo-crop .logo-img{position:absolute;width:289.84px;height:289.84px;max-width:none;left:-27.57px;top:-125.9px;}
+  header.app .titles h1{font-size:17px;color:var(--purple-dark);}
+  header.app .titles p{margin:0;font-size:12px;color:var(--muted);}
+  .fileinfo{font-size:12.5px;color:var(--muted);text-align:right;line-height:1.5;}
+  .fileinfo b{color:var(--text);}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{background:var(--purple);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:600;transition:background .15s;}
+  .btn:hover{background:var(--purple-dark);}
+  .btn.secondary{background:#fff;color:var(--purple);border:1.5px solid var(--purple);}
+  .btn.secondary:hover{background:#F3EAF8;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  #uploadZone{margin:28px 0;padding:38px 20px;border:2.5px dashed #C9B8D9;border-radius:14px;background:#FCFBFE;text-align:center;transition:border-color .15s, background .15s;}
+  #uploadZone.dragover{border-color:var(--purple);background:#F3EAF8;}
+  #uploadZone p.hint{color:var(--muted);font-size:12.5px;max-width:520px;margin:10px auto 0;line-height:1.6;}
+  #uploadZone .icon{font-size:15px;color:var(--purple);font-weight:700;margin-bottom:6px;}
+
+  #errorPanel{margin:20px 0;padding:18px 20px;border:1.5px solid var(--red);background:var(--flagbg);border-radius:12px;}
+  #errorPanel h2{color:var(--bad);font-size:15px;}
+  #errorPanel ul{margin:10px 0 0;padding-left:20px;}
+  #errorPanel li{margin-bottom:6px;line-height:1.5;font-size:13px;}
+  #errorPanel .etype{display:inline-block;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 7px;margin-right:6px;vertical-align:1px;}
+
+  section.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px;}
+  section.card h2{font-size:14.5px;color:var(--purple-dark);}
+  section.card .sub{color:var(--muted);font-size:12px;margin-top:-2px;margin-bottom:10px;}
+
+  .filters-row{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;}
+  .filter-group{min-width:150px;}
+  .filter-group .flabel{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;display:block;}
+  .filter-group input[type=date]{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:13px;font-family:inherit;}
+  .chipset{display:flex;flex-wrap:wrap;gap:6px;max-width:340px;}
+  .chip{border:1.3px solid var(--border);background:#fff;border-radius:20px;padding:4px 12px;font-size:12.5px;color:var(--text);user-select:none;}
+  .chip.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+  .filters-actions{margin-left:auto;display:flex;gap:8px;align-items:center;align-self:center;}
+  .filters-summary{font-size:12px;color:var(--muted);margin-top:12px;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .kpi{background:#FBF9FD;border:1px solid var(--border);border-radius:11px;padding:13px 14px;}
+  .kpi .klabel{font-size:11px;color:var(--muted);font-weight:600;}
+  .kpi .kval{font-size:19px;font-weight:700;color:var(--purple-dark);margin-top:3px;}
+  .kpi .kval.flagcount{color:var(--bad);}
+
+  .rule-box{display:flex;align-items:center;flex-wrap:wrap;gap:14px;}
+  .rule-box .rtext{font-size:13.5px;}
+  .rule-box input[type=number]{width:80px;border:1.5px solid var(--purple);border-radius:7px;padding:6px 8px;font-size:13.5px;font-weight:700;color:var(--purple-dark);}
+  .rule-note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5;}
+
+  .chart-wrap{overflow-x:auto;}
+  .legend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+
+  table{border-collapse:collapse;width:100%;font-size:12.8px;}
+  thead th{position:sticky;top:0;background:#FBF9FD;text-align:left;padding:9px 10px;border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;color:var(--purple-dark);font-weight:700;}
+  thead th:hover{color:var(--purple);}
+  thead th .arrow{font-size:10px;margin-left:3px;color:var(--muted);}
+  tbody td{padding:8px 10px;border-bottom:1px solid #F0EAF5;white-space:nowrap;}
+  tbody tr.flagged{background:var(--flagbg);}
+  tbody tr.cat-row{background:#F3EAF8;font-weight:700;}
+  .badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;}
+  .badge.on{background:var(--red);color:#fff;}
+  .badge.off{background:#E7F4EC;color:var(--good);}
+  .trend{font-weight:700;}
+  .trend.up{color:var(--good);}
+  .trend.down{color:var(--bad);}
+  .trend.na{color:var(--muted);font-weight:400;}
+  .table-scroll{overflow-x:auto;}
+  .view-toggle{display:flex;gap:6px;margin-bottom:12px;}
+  .view-toggle button{border:1.3px solid var(--purple);background:#fff;color:var(--purple);border-radius:7px;padding:6px 14px;font-size:12.5px;font-weight:600;}
+  .view-toggle button.active{background:var(--purple);color:#fff;}
+
+  .channels-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  .ch-card{border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .ch-card.flagged{border-color:var(--red);background:var(--flagbg);}
+  .ch-card h3{font-size:14px;margin-bottom:8px;}
+  .ch-card .row{display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0;color:var(--muted);}
+  .ch-card .row b{color:var(--text);font-weight:700;}
+
+  footer.note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:10px;}
+  .rownum{color:var(--muted);font-size:11.5px;}
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="brand">
+    <div class="logo-crop"><img class="logo-img" src="assets/alta-logo.png" alt="Alta"></div>
+    <div class="titles">
+      <h1>პროდუქტებისა და არხების ყურადღების დაფა</h1>
+      <p>ROAS / CAC — ყოველკვირეული გადახედვა</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div id="fileInfoBox" class="fileinfo" hidden></div>
+    <button class="btn secondary" id="changeFileBtn" type="button" hidden>ფაილის შეცვლა</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="uploadZone">
+    <div class="icon">ატვირთეთ .xlsx ფაილი</div>
+    <button class="btn" id="browseBtn" type="button">აირჩიეთ ფაილი</button>
+    <input type="file" id="fileInput" accept=".xlsx" hidden>
+    <p class="hint">
+      აირჩიეთ ან ჩააგდეთ Electronics_Sales_and_Ads_-_*.xlsx ფაილი (Smartphones, Laptops, TVs, Accessories, Ad_Spend ფურცლებით).
+      ახალი ფაილის ატვირთვა მთლიანად ანაცვლებს მიმდინარე ხედს. მონაცემები მუშავდება მხოლოდ ამ გვერდზე, თქვენს ბრაუზერში — არსად არ იგზავნება.
+    </p>
+  </div>
+
+  <div id="errorPanel" hidden>
+    <h2>ფაილი ვერ ჩაიტვირთა</h2>
+    <div class="sub" id="errorFileName"></div>
+    <div id="errorGroups"></div>
+  </div>
+
+  <main id="dashboard" hidden>
+
+    <section class="card">
+      <h2>ფილტრები</h2>
+      <div class="filters-row" id="filtersRow">
+        <div class="filter-group">
+          <span class="flabel">თარიღი — დან</span>
+          <input type="date" id="dateStart">
+        </div>
+        <div class="filter-group">
+          <span class="flabel">თარიღი — მდე</span>
+          <input type="date" id="dateEnd">
+        </div>
+        <div class="filter-group">
+          <span class="flabel">კატეგორია</span>
+          <div class="chipset" id="categoryChips"></div>
+        </div>
+        <div class="filter-group">
+          <span class="flabel">SKU</span>
+          <div class="chipset" id="skuChips"></div>
+        </div>
+        <div class="filter-group">
+          <span class="flabel">არხი</span>
+          <div class="chipset" id="channelChips"></div>
+        </div>
+        <div class="filters-actions">
+          <button class="btn secondary" id="resetFiltersBtn" type="button">ფილტრის გასუფთავება</button>
+        </div>
+      </div>
+      <div class="filters-summary" id="filtersSummary"></div>
+    </section>
+
+    <section class="card">
+      <h2>ძირითადი მაჩვენებლები</h2>
+      <div class="sub">გაფილტრული მონაცემებიდან, ჯამური რიცხვებით გამოთვლილი</div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </section>
+
+    <section class="card">
+      <h2>დროითი გრაფიკი</h2>
+      <div class="sub">კვირეული შემოსავალი (სვეტები) და სარეკლამო ხარჯი (ხაზი), მიმდინარე ფილტრით</div>
+      <div class="legend">
+        <span><i style="background:var(--purple)"></i>გაყიდვების შემოსავალი</span>
+        <span><i style="background:var(--orange)"></i>რეკლამის ხარჯი</span>
+      </div>
+      <div class="chart-wrap"><svg id="timeChart" width="100%" height="260"></svg></div>
+    </section>
+
+    <section class="card">
+      <h2>მონიშვნის წესი</h2>
+      <div class="rule-box">
+        <span class="rtext">მონიშნეთ პროდუქტი/არხი, თუ ხარჯი &gt; 0 GEL და ROAS &lt;</span>
+        <input type="number" id="roasThreshold" step="0.1" min="0" value="3.0">
+        <span class="rtext">x</span>
+      </div>
+      <p class="rule-note">
+        ნაგულისხმევი ზღვარი (3.0x) აღებულია Read_Me-ს სავარჯიშო წესიდან — შეგიძლიათ შეცვალოთ და ცხრილი/ბარათები მაშინვე გადათვლის მონიშვნას.
+        CAC ცხრილში საინფორმაციოდაა ნაჩვენები; მონიშვნაზე ჯერ არ მოქმედებს, რადგან CAC-ის ზღვარი ბიზნეს-გადაწყვეტილებაა და დამტკიცებული არ არის.
+      </p>
+    </section>
+
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h2>პროდუქტების ცხრილი</h2>
+          <div class="sub">დააწკაპუნეთ სვეტის სათაურზე დასალაგებლად</div>
+        </div>
+        <button class="btn" id="exportCsvBtn" type="button">CSV ექსპორტი (გაფილტრული)</button>
+      </div>
+      <div class="view-toggle">
+        <button id="viewSkuBtn" class="active" type="button">SKU დონე</button>
+        <button id="viewCatBtn" type="button">კატეგორიის ჯამი</button>
+      </div>
+      <div class="table-scroll">
+        <table id="productsTable">
+          <thead><tr id="productsHead"></tr></thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>არხების შეჯამება</h2>
+      <div class="sub">იგივე ROAS&lt;ზღვარი წესით მონიშნული; CAC საინფორმაციოდ (ზღვარი ჯერ არ დამტკიცებულა)</div>
+      <div class="channels-grid" id="channelsGrid"></div>
+    </section>
+
+    <footer class="note">
+      ROAS = რეკლამაზე მიკუთვნებული შემოსავალი (Google Ads + Meta Ads) ÷ სარეკლამო ხარჯი. ფასიანი CAC = სარეკლამო ხარჯი ÷ ახალი ფასიანი მომხმარებლების რაოდენობა.
+      ორივე მეტრიკა ითვლება ჯამური რიცხვებიდან, არა ცალკეული პროდუქტების საშუალოდან. Organic შედის გაყიდვების შემოსავალში, მაგრამ არა ROAS/CAC-ში.
+    </footer>
+
+  </main>
+</div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script>
+'use strict';
+
+var CATEGORY_SHEETS = ['Smartphones','Laptops','TVs','Accessories'];
+var SALES_COLS = ['date','order_id','customer_id','is_new_customer','sku','product_name','units','net_revenue_gel','cost_of_goods_gel','channel','campaign_id'];
+var SPEND_COLS = ['date','campaign_id','sku','channel','spend_gel'];
+var PAID_CHANNELS = ['Google Ads','Meta Ads'];
+var ALL_CHANNELS = ['Google Ads','Meta Ads','Organic'];
+
+var state = {
+  fileName:null, salesRows:[], spendRows:[], skuInfo:{},
+  filters:{start:null,end:null,categories:null,skus:null,channels:null},
+  roasThreshold:3.0, sortCol:'flagged', sortDir:'desc', productView:'sku',
+  minDate:null, maxDate:null, lastRenderedProductRows:[]
+};
+
+/* ---------- date helpers ---------- */
+function excelSerialToDate(serial){ return new Date(Math.round((serial-25569)*86400000)); }
+function dateInputToSerial(str){ // 'yyyy-mm-dd' -> excel serial (UTC)
+  var p = str.split('-').map(Number);
+  var ms = Date.UTC(p[0], p[1]-1, p[2]);
+  return Math.round(ms/86400000) + 25569;
+}
+function fmtDate(serial){
+  var d = excelSerialToDate(serial);
+  var y=d.getUTCFullYear(), m=String(d.getUTCMonth()+1).padStart(2,'0'), day=String(d.getUTCDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function fmtGEL(n){
+  if (n===null||n===undefined||isNaN(n)) return 'N/A';
+  return Math.round(n).toLocaleString('ka-GE') + ' ₾';
+}
+function fmtNum(n){ return n===null||n===undefined?'N/A':Math.round(n).toLocaleString('ka-GE'); }
+function fmtRoas(n){ return n===null?'N/A':(n.toFixed(2)+'x'); }
+function fmtPct(n){ return n===null?'N/A':((n>=0?'+':'')+n.toFixed(1)+'%'); }
+function trendClassOf(n){ if (n===null) return 'na'; if (Math.abs(n)<0.05) return 'na'; return n>0?'up':'down'; }
+function fmtTrend(n){
+  if (n===null) return 'N/A';
+  if (Math.abs(n)<0.05) return '— 0.0%';
+  return (n>0?'▲ ':'▼ ') + Math.abs(n).toFixed(1) + '%';
+}
+function csvEsc(v){
+  v = (v===null||v===undefined) ? '' : String(v);
+  if (/[",\r\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+
+/* ---------- upload wiring ---------- */
+var uploadZone = document.getElementById('uploadZone');
+var fileInput = document.getElementById('fileInput');
+document.getElementById('browseBtn').addEventListener('click', function(){ fileInput.click(); });
+document.getElementById('changeFileBtn').addEventListener('click', function(){ fileInput.click(); });
+fileInput.addEventListener('change', function(e){ if (e.target.files[0]) handleFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(function(ev){
+  uploadZone.addEventListener(ev, function(e){ e.preventDefault(); uploadZone.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(function(ev){
+  uploadZone.addEventListener(ev, function(e){ e.preventDefault(); uploadZone.classList.remove('dragover'); });
+});
+uploadZone.addEventListener('drop', function(e){
+  var f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+function handleFile(file){
+  if (!/\.xlsx$/i.test(file.name)){
+    renderStructuralError(file.name, 'ფაილის ტიპი უნდა იყოს .xlsx');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(evt){
+    try {
+      var data = new Uint8Array(evt.target.result);
+      var wb = XLSX.read(data, {type:'array'});
+      processWorkbook(wb, file.name);
+    } catch(err){
+      renderStructuralError(file.name, 'ფაილის წაკითხვა ვერ მოხერხდა: ' + err.message);
+    }
+  };
+  reader.onerror = function(){ renderStructuralError(file.name, 'ფაილის წაკითხვის შეცდომა'); };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---------- sheet reading ---------- */
+function readSheetRaw(ws){
+  if (!ws || !ws['!ref']) return {headers:[], rows:[]};
+  var range = XLSX.utils.decode_range(ws['!ref']);
+  var headers = [];
+  for (var c = range.s.c; c <= range.e.c; c++){
+    var hc = ws[XLSX.utils.encode_cell({r:range.s.r,c:c})];
+    headers.push(hc && hc.v != null ? String(hc.v).trim() : '');
+  }
+  var rows = [];
+  for (var r = range.s.r+1; r <= range.e.r; r++){
+    var any=false, row={__rowNum:r+1};
+    for (c = range.s.c; c <= range.e.c; c++){
+      var colName = headers[c-range.s.c];
+      if (!colName) continue;
+      var addr = XLSX.utils.encode_cell({r:r,c:c});
+      var cell = ws[addr];
+      if (cell && cell.v !== undefined && cell.v !== '') any = true;
+      row[colName] = cell ? {v:cell.v, t:cell.t} : {v:null, t:null};
+    }
+    if (any) rows.push(row);
+  }
+  return {headers:headers, rows:rows};
+}
+
+function validateSalesRow(row, sheet, errors){
+  var ok = true;
+  function fail(field,msg){ errors.push({sheet:sheet, row:row.__rowNum, field:field, message:msg}); ok=false; }
+  var req = ['date','order_id','customer_id','is_new_customer','sku','product_name','units','net_revenue_gel','cost_of_goods_gel','channel'];
+  req.forEach(function(f){
+    if (!row[f] || row[f].v === null || row[f].v === '') fail(f, 'ცარიელი აუცილებელი ველი: ' + f);
+  });
+  if (!ok) return null;
+  if (row.date.t !== 'n') fail('date', 'არასწორი თარიღი: "' + row.date.v + '"');
+  var channel = String(row.channel.v).trim();
+  if (ALL_CHANNELS.indexOf(channel) === -1) fail('channel', 'უცნობი არხი: "' + channel + '"');
+  if (row.units.t !== 'n' || row.units.v <= 0 || Math.round(row.units.v) !== row.units.v) fail('units', 'units უნდა იყოს დადებითი მთელი რიცხვი');
+  if (row.net_revenue_gel.t !== 'n' || row.net_revenue_gel.v < 0) fail('net_revenue_gel', 'უარყოფითი ან არასწორი თანხა');
+  if (row.cost_of_goods_gel.t !== 'n' || row.cost_of_goods_gel.v < 0) fail('cost_of_goods_gel', 'უარყოფითი ან არასწორი თანხა');
+  if (row.is_new_customer.t !== 'b') fail('is_new_customer', 'უნდა იყოს TRUE/FALSE');
+  var campaignRaw = row.campaign_id ? row.campaign_id.v : null;
+  var campaignId = campaignRaw != null ? String(campaignRaw).trim() : '';
+  if (channel !== 'Organic' && !campaignId) fail('campaign_id', 'campaign_id აუცილებელია ფასიან არხზე');
+  if (!ok) return null;
+  return {
+    sheet:sheet, row:row.__rowNum, date:row.date.v,
+    order_id:String(row.order_id.v).trim(), customer_id:String(row.customer_id.v).trim(),
+    is_new_customer: row.is_new_customer.v === true,
+    sku:String(row.sku.v).trim(), product_name:String(row.product_name.v).trim(), category:sheet,
+    units:row.units.v, revenue:row.net_revenue_gel.v, cogs:row.cost_of_goods_gel.v,
+    channel:channel, campaign_id: campaignId || null
+  };
+}
+
+function validateSpendRow(row, errors){
+  var ok = true;
+  function fail(field,msg){ errors.push({sheet:'Ad_Spend', row:row.__rowNum, field:field, message:msg}); ok=false; }
+  var req = ['date','campaign_id','sku','channel','spend_gel'];
+  req.forEach(function(f){
+    if (!row[f] || row[f].v === null || row[f].v === '') fail(f, 'ცარიელი აუცილებელი ველი: ' + f);
+  });
+  if (!ok) return null;
+  if (row.date.t !== 'n') fail('date', 'არასწორი თარიღი: "' + row.date.v + '"');
+  var channel = String(row.channel.v).trim();
+  if (PAID_CHANNELS.indexOf(channel) === -1) fail('channel', 'Ad_Spend-ში არხი უნდა იყოს Google Ads ან Meta Ads: "' + channel + '"');
+  if (row.spend_gel.t !== 'n' || row.spend_gel.v < 0) fail('spend_gel', 'უარყოფითი ან არასწორი თანხა');
+  if (!ok) return null;
+  return {
+    row:row.__rowNum, date:row.date.v, campaign_id:String(row.campaign_id.v).trim(),
+    sku:String(row.sku.v).trim(), channel:channel, spend:row.spend_gel.v
+  };
+}
+
+function checkDuplicateOrderIds(salesRows, errors){
+  var seen = {};
+  salesRows.forEach(function(r){ (seen[r.order_id] = seen[r.order_id] || []).push(r); });
+  Object.keys(seen).forEach(function(id){
+    var occs = seen[id];
+    if (occs.length > 1){
+      errors.push({sheet:null, row:null, field:'order_id',
+        message:'დუბლიკატი order_id "'+id+'": ' + occs.map(function(o){return o.sheet+' მწკრივი '+o.row;}).join(', ')});
+    }
+  });
+}
+
+function checkConflictingCampaigns(salesRows, spendRows, errors){
+  var map = {};
+  function reg(cid, sku, channel, loc){
+    if (!cid) return;
+    if (!map[cid]) map[cid] = {skus:{}, channels:{}, occ:[]};
+    map[cid].skus[sku]=1; map[cid].channels[channel]=1; map[cid].occ.push(loc);
+  }
+  salesRows.forEach(function(r){ if (r.campaign_id) reg(r.campaign_id, r.sku, r.channel, r.sheet+' მწკრივი '+r.row); });
+  spendRows.forEach(function(r){ reg(r.campaign_id, r.sku, r.channel, 'Ad_Spend მწკრივი '+r.row); });
+  Object.keys(map).forEach(function(cid){
+    var info = map[cid];
+    var skus = Object.keys(info.skus), chans = Object.keys(info.channels);
+    if (skus.length > 1 || chans.length > 1){
+      errors.push({sheet:null, row:null, field:'campaign_id',
+        message:'კონფლიქტური campaign_id "'+cid+'": SKU [' + skus.join(', ') + '], არხები [' + chans.join(', ') + ']'});
+    }
+  });
+}
+
+function processWorkbook(wb, fileName){
+  var errors = [];
+  var required = CATEGORY_SHEETS.concat(['Ad_Spend']);
+  var missing = required.filter(function(s){ return wb.SheetNames.indexOf(s) === -1; });
+  if (missing.length){
+    errors.push({sheet:null,row:null,field:null,message:'საჭირო ფურცელი ვერ მოიძებნა: ' + missing.join(', ')});
+    renderErrors(errors, fileName); return;
+  }
+  var salesRows = [], spendRows = [], skuInfo = {};
+  CATEGORY_SHEETS.forEach(function(cat){
+    var parsed = readSheetRaw(wb.Sheets[cat]);
+    var missingCols = SALES_COLS.filter(function(c){ return parsed.headers.indexOf(c) === -1; });
+    if (missingCols.length){
+      errors.push({sheet:cat,row:null,field:null,message:'სვეტები აკლია: ' + missingCols.join(', ')});
+      return;
+    }
+    parsed.rows.forEach(function(row){
+      var rec = validateSalesRow(row, cat, errors);
+      if (rec){
+        salesRows.push(rec);
+        if (!skuInfo[rec.sku]) skuInfo[rec.sku] = {name:rec.product_name, category:cat};
+      }
+    });
+  });
+  var spendParsed = readSheetRaw(wb.Sheets['Ad_Spend']);
+  var missingSpendCols = SPEND_COLS.filter(function(c){ return spendParsed.headers.indexOf(c) === -1; });
+  if (missingSpendCols.length){
+    errors.push({sheet:'Ad_Spend',row:null,field:null,message:'სვეტები აკლია: ' + missingSpendCols.join(', ')});
+  } else {
+    spendParsed.rows.forEach(function(row){
+      var rec = validateSpendRow(row, errors);
+      if (rec) spendRows.push(rec);
+    });
+  }
+  checkDuplicateOrderIds(salesRows, errors);
+  checkConflictingCampaigns(salesRows, spendRows, errors);
+
+  if (errors.length){ renderErrors(errors, fileName); return; }
+
+  state.fileName = fileName;
+  state.salesRows = salesRows;
+  state.spendRows = spendRows;
+  state.skuInfo = skuInfo;
+  var allDates = salesRows.map(function(r){return r.date;}).concat(spendRows.map(function(r){return r.date;}));
+  state.minDate = Math.min.apply(null, allDates);
+  state.maxDate = Math.max.apply(null, allDates);
+  state.filters = {start:state.minDate, end:state.maxDate, categories:null, skus:null, channels:null};
+  state.sortCol='flagged'; state.sortDir='desc'; state.productView='sku';
+
+  document.getElementById('errorPanel').hidden = true;
+  initFiltersUI();
+  renderFileInfo();
+  document.getElementById('dashboard').hidden = false;
+  uploadZone.hidden = true;
+  document.getElementById('changeFileBtn').hidden = false;
+  renderAll();
+}
+
+function renderStructuralError(fileName, msg){
+  renderErrors([{sheet:null,row:null,field:null,message:msg}], fileName);
+}
+
+function renderErrors(errors, fileName){
+  document.getElementById('dashboard').hidden = true;
+  var panel = document.getElementById('errorPanel');
+  panel.hidden = false;
+  document.getElementById('errorFileName').textContent = 'ფაილი: ' + fileName + ' — ნაპოვნია ' + errors.length + ' შეცდომა. გაასწორეთ და თავიდან ატვირთეთ.';
+  var groupsEl = document.getElementById('errorGroups');
+  groupsEl.innerHTML = '';
+  var byType = {structure:[], row:[], crossrow:[]};
+  errors.forEach(function(e){
+    if (e.sheet && e.row) byType.row.push(e);
+    else if (e.field) byType.crossrow.push(e);
+    else byType.structure.push(e);
+  });
+  function renderGroup(title, badgeText, list){
+    if (!list.length) return;
+    var h = document.createElement('h3');
+    h.style.fontSize='13px'; h.style.marginTop='14px'; h.textContent = title + ' (' + list.length + ')';
+    groupsEl.appendChild(h);
+    var ul = document.createElement('ul');
+    list.forEach(function(e){
+      var li = document.createElement('li');
+      var loc = e.sheet ? (e.sheet + (e.row?(', მწკრივი '+e.row):'') + ': ') : '';
+      li.innerHTML = '<span class="etype">' + badgeText + '</span> ' + loc + e.message;
+      ul.appendChild(li);
+    });
+    groupsEl.appendChild(ul);
+  }
+  renderGroup('სტრუქტურული შეცდომები', 'სტრუქტურა', byType.structure);
+  renderGroup('დუბლიკატები და კონფლიქტები', 'კონფლიქტი', byType.crossrow);
+  renderGroup('მწკრივებში ნაპოვნი შეცდომები', 'მწკრივი', byType.row);
+}
+
+/* ---------- filters UI ---------- */
+function initFiltersUI(){
+  document.getElementById('dateStart').value = fmtDate(state.minDate);
+  document.getElementById('dateEnd').value = fmtDate(state.maxDate);
+  document.getElementById('dateStart').min = fmtDate(state.minDate);
+  document.getElementById('dateStart').max = fmtDate(state.maxDate);
+  document.getElementById('dateEnd').min = fmtDate(state.minDate);
+  document.getElementById('dateEnd').max = fmtDate(state.maxDate);
+
+  buildChips('categoryChips', CATEGORY_SHEETS, null);
+  var skus = Object.keys(state.skuInfo).sort();
+  buildChips('skuChips', skus, null);
+  buildChips('channelChips', ALL_CHANNELS, null);
+}
+
+function buildChips(containerId, values, selectedSet){
+  var el = document.getElementById(containerId);
+  el.innerHTML = '';
+  values.forEach(function(v){
+    var chip = document.createElement('span');
+    chip.className = 'chip active';
+    chip.textContent = v;
+    chip.dataset.value = v;
+    chip.addEventListener('click', function(){
+      chip.classList.toggle('active');
+      onFiltersChanged();
+    });
+    el.appendChild(chip);
+  });
+}
+
+function readChipSelection(containerId, allValues){
+  var el = document.getElementById(containerId);
+  var active = Array.prototype.slice.call(el.querySelectorAll('.chip.active')).map(function(c){return c.dataset.value;});
+  if (active.length === allValues.length || active.length === 0) return null; // null = no filter (all)
+  var set = {};
+  active.forEach(function(v){ set[v]=1; });
+  return set;
+}
+
+function onFiltersChanged(){
+  var s = document.getElementById('dateStart').value;
+  var e = document.getElementById('dateEnd').value;
+  state.filters.start = s ? dateInputToSerial(s) : state.minDate;
+  state.filters.end = e ? dateInputToSerial(e) : state.maxDate;
+  state.filters.categories = readChipSelection('categoryChips', CATEGORY_SHEETS);
+  state.filters.skus = readChipSelection('skuChips', Object.keys(state.skuInfo));
+  state.filters.channels = readChipSelection('channelChips', ALL_CHANNELS);
+  renderAll();
+}
+document.getElementById('dateStart').addEventListener('change', onFiltersChanged);
+document.getElementById('dateEnd').addEventListener('change', onFiltersChanged);
+document.getElementById('resetFiltersBtn').addEventListener('click', function(){
+  if (!state.fileName) return;
+  initFiltersUI();
+  state.filters = {start:state.minDate, end:state.maxDate, categories:null, skus:null, channels:null};
+  renderAll();
+});
+document.getElementById('roasThreshold').addEventListener('input', function(e){
+  var v = parseFloat(e.target.value);
+  state.roasThreshold = isNaN(v) ? 3.0 : v;
+  renderAll();
+});
+document.getElementById('viewSkuBtn').addEventListener('click', function(){
+  state.productView='sku';
+  document.getElementById('viewSkuBtn').classList.add('active');
+  document.getElementById('viewCatBtn').classList.remove('active');
+  renderProductsTable();
+});
+document.getElementById('viewCatBtn').addEventListener('click', function(){
+  state.productView='category';
+  document.getElementById('viewCatBtn').classList.add('active');
+  document.getElementById('viewSkuBtn').classList.remove('active');
+  renderProductsTable();
+});
+document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+
+/* ---------- filtering + aggregation ---------- */
+function applyFilters(rows, isSpend){
+  var f = state.filters;
+  return rows.filter(function(r){
+    if (r.date < f.start || r.date > f.end) return false;
+    if (f.channels && !f.channels[r.channel]) return false;
+    if (f.skus && !f.skus[r.sku]) return false;
+    if (f.categories){
+      var cat = isSpend ? ((state.skuInfo[r.sku]||{}).category) : r.category;
+      if (!cat || !f.categories[cat]) return false;
+    }
+    return true;
+  });
+}
+
+function computeTrendWindow(filteredSales, filteredSpend){
+  var f = state.filters;
+  var allDates = filteredSales.map(function(r){return r.date;}).concat(filteredSpend.map(function(r){return r.date;}));
+  var maxD = allDates.length ? Math.max.apply(null, allDates) : f.end;
+  var lastWeekStart = Math.max(f.start, maxD - 6);
+  var priorEnd = lastWeekStart - 1;
+  var priorStart = f.start;
+  return {lastWeekStart:lastWeekStart, lastWeekEnd:maxD, priorStart:priorStart, priorEnd:priorEnd, hasPrior: priorEnd >= priorStart};
+}
+
+function aggregateBy(salesKeyFn, spendKeyFn, filteredSales, filteredSpend, universeKeys, trendWin){
+  var groups = {};
+  function ensure(k){
+    if (!groups[k]) groups[k] = {key:k, units:0, revenue:0, adRevenue:0, cogs:0, spend:0,
+      newCustSet:{}, lastWeekRev:0, priorRev:0};
+    return groups[k];
+  }
+  universeKeys.forEach(ensure);
+  filteredSales.forEach(function(r){
+    var g = ensure(salesKeyFn(r));
+    g.units += r.units; g.revenue += r.revenue; g.cogs += r.cogs;
+    var isPaid = PAID_CHANNELS.indexOf(r.channel) !== -1;
+    if (isPaid){
+      g.adRevenue += r.revenue;
+      if (r.is_new_customer) g.newCustSet[r.customer_id] = 1;
+    }
+    if (trendWin){
+      if (r.date >= trendWin.lastWeekStart) g.lastWeekRev += r.revenue;
+      else if (trendWin.hasPrior && r.date >= trendWin.priorStart && r.date <= trendWin.priorEnd) g.priorRev += r.revenue;
+    }
+  });
+  filteredSpend.forEach(function(r){
+    var g = ensure(spendKeyFn(r));
+    g.spend += r.spend;
+  });
+  return Object.keys(groups).map(function(k){ return finalizeMetrics(groups[k], trendWin); });
+}
+
+function finalizeMetrics(g, trendWin){
+  var roas = g.spend > 0 ? (g.adRevenue / g.spend) : null;
+  var newCustomers = Object.keys(g.newCustSet).length;
+  var cac = newCustomers > 0 ? (g.spend / newCustomers) : null;
+  var marginAfter = g.revenue - g.cogs - g.spend;
+  var flagged = g.spend > 0 && roas !== null && roas < state.roasThreshold;
+  var trendPct = null;
+  if (trendWin && trendWin.hasPrior){
+    var lastDays = trendWin.lastWeekEnd - trendWin.lastWeekStart + 1;
+    var priorDays = trendWin.priorEnd - trendWin.priorStart + 1;
+    var lastAvg = g.lastWeekRev / lastDays;
+    var priorAvg = g.priorRev / priorDays;
+    if (priorAvg > 0) trendPct = ((lastAvg - priorAvg) / priorAvg) * 100;
+    else if (lastAvg > 0) trendPct = 100;
+  }
+  return {key:g.key, units:g.units, revenue:g.revenue, adRevenue:g.adRevenue, cogs:g.cogs, spend:g.spend,
+    roas:roas, newCustomers:newCustomers, cac:cac, marginAfter:marginAfter, flagged:flagged, trendPct:trendPct};
+}
+
+function buildProductRows(){
+  var filteredSales = applyFilters(state.salesRows, false);
+  var filteredSpend = applyFilters(state.spendRows, true);
+  var trendWin = computeTrendWindow(filteredSales, filteredSpend);
+  if (state.productView === 'sku'){
+    var skuSet = {};
+    filteredSales.forEach(function(r){ skuSet[r.sku]=1; });
+    filteredSpend.forEach(function(r){ skuSet[r.sku]=1; });
+    var rows = aggregateBy(function(r){return r.sku;}, function(r){return r.sku;}, filteredSales, filteredSpend, Object.keys(skuSet), trendWin);
+    return rows.map(function(r){
+      var info = state.skuInfo[r.key] || {};
+      return Object.assign({}, r, {label:r.key, productName:info.name||r.key, category:info.category||'უცნობი'});
+    });
+  } else {
+    var catSet = {};
+    filteredSales.forEach(function(r){ catSet[r.category]=1; });
+    filteredSpend.forEach(function(r){ var c=(state.skuInfo[r.sku]||{}).category; if (c) catSet[c]=1; });
+    var rows2 = aggregateBy(function(r){return r.category;}, function(r){return (state.skuInfo[r.sku]||{}).category || 'უცნობი';}, filteredSales, filteredSpend, Object.keys(catSet), trendWin);
+    return rows2.map(function(r){ return Object.assign({}, r, {label:r.key, productName:r.key, category:r.key}); });
+  }
+}
+
+function buildChannelRows(){
+  var filteredSales = applyFilters(state.salesRows, false);
+  var filteredSpend = applyFilters(state.spendRows, true);
+  var trendWin = computeTrendWindow(filteredSales, filteredSpend);
+  var chSet = {};
+  ALL_CHANNELS.forEach(function(c){ chSet[c]=1; });
+  return aggregateBy(function(r){return r.channel;}, function(r){return r.channel;}, filteredSales, filteredSpend, Object.keys(chSet), trendWin);
+}
+
+function computeGlobalKPIs(){
+  var filteredSales = applyFilters(state.salesRows, false);
+  var filteredSpend = applyFilters(state.spendRows, true);
+  var revenue=0, adRevenue=0, cogs=0, spend=0, newCustSet={};
+  filteredSales.forEach(function(r){
+    revenue += r.revenue; cogs += r.cogs;
+    if (PAID_CHANNELS.indexOf(r.channel) !== -1){
+      adRevenue += r.revenue;
+      if (r.is_new_customer) newCustSet[r.customer_id]=1;
+    }
+  });
+  filteredSpend.forEach(function(r){ spend += r.spend; });
+  var roas = spend>0 ? adRevenue/spend : null;
+  var newCustomers = Object.keys(newCustSet).length;
+  var cac = newCustomers>0 ? spend/newCustomers : null;
+  return {revenue:revenue, adRevenue:adRevenue, spend:spend, roas:roas, newCustomers:newCustomers, cac:cac,
+    marginAfter: revenue-cogs-spend, filteredSales:filteredSales, filteredSpend:filteredSpend};
+}
+
+/* ---------- render: file info + summary ---------- */
+function renderFileInfo(){
+  var box = document.getElementById('fileInfoBox');
+  box.hidden = false;
+  var cats = {}; state.salesRows.forEach(function(r){cats[r.category]=1;});
+  var skus = Object.keys(state.skuInfo).length;
+  box.innerHTML = '<b>' + state.fileName + '</b><br>' +
+    fmtDate(state.minDate) + ' – ' + fmtDate(state.maxDate) + '<br>' +
+    state.salesRows.length + ' შეკვეთა, ' + Object.keys(cats).length + ' კატეგორია, ' + skus + ' SKU, ' + state.spendRows.length + ' Ad_Spend ჩანაწერი';
+}
+
+function renderAll(){
+  renderFiltersSummary();
+  renderKPIs();
+  renderChart();
+  renderProductsTable();
+  renderChannels();
+}
+
+function renderFiltersSummary(){
+  var f = state.filters;
+  var parts = [fmtDate(f.start) + ' – ' + fmtDate(f.end)];
+  parts.push('კატეგორია: ' + (f.categories?Object.keys(f.categories).join(', '):'ყველა'));
+  parts.push('SKU: ' + (f.skus?Object.keys(f.skus).join(', '):'ყველა'));
+  parts.push('არხი: ' + (f.channels?Object.keys(f.channels).join(', '):'ყველა'));
+  document.getElementById('filtersSummary').textContent = parts.join(' • ');
+}
+
+function renderKPIs(){
+  var k = computeGlobalKPIs();
+  var flaggedProducts = buildProductRowsForCount();
+  var flaggedChannels = buildChannelRows().filter(function(r){return r.flagged;}).length;
+  var cards = [
+    ['გაყიდვების შემოსავალი', fmtGEL(k.revenue)],
+    ['მიკუთვნებული შემოსავალი', fmtGEL(k.adRevenue)],
+    ['სარეკლამო ხარჯი', fmtGEL(k.spend)],
+    ['ჯამული ROAS', fmtRoas(k.roas)],
+    ['ახალი ფასიანი მომხმარებელი', fmtNum(k.newCustomers)],
+    ['ჯამული CAC', fmtGEL(k.cac)],
+    ['მარჟა ხარჯისა და რეკლამის შემდეგ', fmtGEL(k.marginAfter)],
+    ['მონიშნული პროდუქტი / არხი', flaggedProducts + ' / ' + flaggedChannels, true]
+  ];
+  var grid = document.getElementById('kpiGrid');
+  grid.innerHTML = '';
+  cards.forEach(function(c){
+    var div = document.createElement('div');
+    div.className = 'kpi';
+    div.innerHTML = '<div class="klabel">' + c[0] + '</div><div class="kval' + (c[2]?' flagcount':'') + '">' + c[1] + '</div>';
+    grid.appendChild(div);
+  });
+}
+
+function buildProductRowsForCount(){
+  return buildProductRows().filter(function(r){return r.flagged;}).length;
+}
+
+/* ---------- time chart (weekly bars/line, hand-drawn svg) ---------- */
+function buildWeeklySeries(filteredSales, filteredSpend, start, end){
+  var buckets = [];
+  for (var d = start; d <= end; d += 7){
+    buckets.push({start:d, end:Math.min(d+6,end), revenue:0, spend:0});
+  }
+  function place(date, cb){
+    for (var i=0;i<buckets.length;i++){ if (date>=buckets[i].start && date<=buckets[i].end){ cb(buckets[i]); return; } }
+  }
+  filteredSales.forEach(function(r){ place(r.date, function(b){ b.revenue += r.revenue; }); });
+  filteredSpend.forEach(function(r){ place(r.date, function(b){ b.spend += r.spend; }); });
+  return buckets;
+}
+
+function renderChart(){
+  var f = state.filters;
+  var filteredSales = applyFilters(state.salesRows, false);
+  var filteredSpend = applyFilters(state.spendRows, true);
+  var buckets = buildWeeklySeries(filteredSales, filteredSpend, f.start, f.end);
+  var svg = document.getElementById('timeChart');
+  var W = Math.max(560, buckets.length*90), H = 260, padL=60, padB=40, padT=16, padR=16;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('width', W);
+  var maxVal = 1;
+  buckets.forEach(function(b){ maxVal = Math.max(maxVal, b.revenue, b.spend); });
+  var chartW = W-padL-padR, chartH = H-padT-padB;
+  var bw = buckets.length ? (chartW/buckets.length) : chartW;
+  var svgns = 'http://www.w3.org/2000/svg';
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  function el(tag,attrs){ var e=document.createElementNS(svgns,tag); for (var k in attrs) e.setAttribute(k,attrs[k]); return e; }
+  // axis line
+  svg.appendChild(el('line',{x1:padL,y1:padT+chartH,x2:padL+chartW,y2:padT+chartH,stroke:'#E4DCEE','stroke-width':1}));
+  // gridlines + y labels
+  for (var gi=0; gi<=4; gi++){
+    var gy = padT + chartH - (gi/4)*chartH;
+    svg.appendChild(el('line',{x1:padL,y1:gy,x2:padL+chartW,y2:gy,stroke:'#F0EAF5','stroke-width':1}));
+    var lbl = el('text',{x:padL-8,y:gy+4,'text-anchor':'end','font-size':10,fill:'#7A6B87'});
+    lbl.textContent = fmtNum(Math.round(maxVal*gi/4));
+    svg.appendChild(lbl);
+  }
+  var linePts = [];
+  buckets.forEach(function(b,i){
+    var x = padL + i*bw;
+    var barH = maxVal>0 ? (b.revenue/maxVal)*chartH : 0;
+    svg.appendChild(el('rect',{x:x+bw*0.18, y:padT+chartH-barH, width:bw*0.64, height:barH, fill:'#6B2C8F', rx:3}));
+    var spendY = padT + chartH - (maxVal>0 ? (b.spend/maxVal)*chartH : 0);
+    linePts.push((x+bw/2)+','+spendY);
+    var xl = el('text',{x:x+bw/2,y:H-14,'text-anchor':'middle','font-size':9.5,fill:'#7A6B87'});
+    xl.textContent = fmtDate(b.start).slice(5);
+    svg.appendChild(xl);
+  });
+  if (linePts.length){
+    svg.appendChild(el('polyline',{points:linePts.join(' '), fill:'none', stroke:'#F5901F','stroke-width':2.5}));
+    buckets.forEach(function(b,i){
+      var x = padL + i*bw + bw/2;
+      var y = padT + chartH - (maxVal>0 ? (b.spend/maxVal)*chartH : 0);
+      svg.appendChild(el('circle',{cx:x,cy:y,r:3.5,fill:'#F5901F'}));
+    });
+  }
+  if (!buckets.length){
+    var t = el('text',{x:W/2,y:H/2,'text-anchor':'middle','font-size':13,fill:'#7A6B87'});
+    t.textContent = 'არჩეული ფილტრით მონაცემი ვერ მოიძებნა';
+    svg.appendChild(t);
+  }
+}
+
+/* ---------- products table ---------- */
+var PRODUCT_COLS = [
+  ['category','კატეგორია'],
+  ['label','SKU'],
+  ['productName','სახელი'],
+  ['units','ერთეული'],
+  ['revenue','შემოსავალი'],
+  ['adRevenue','მიკუთვნებული'],
+  ['spend','ხარჯი'],
+  ['roas','ROAS'],
+  ['newCustomers','ახალი მომხმ.'],
+  ['cac','CAC'],
+  ['marginAfter','მარჟა'],
+  ['trendPct','ტრენდი'],
+  ['flagged','მონიშვნა']
+];
+
+function compareRows(a,b,col,dir){
+  var va=a[col], vb=b[col];
+  if (va===null && vb===null) return 0;
+  if (va===null) return 1;
+  if (vb===null) return -1;
+  if (typeof va === 'string'){ va=va.toLowerCase(); vb=vb.toLowerCase(); }
+  if (typeof va === 'boolean'){ va = va?1:0; vb = vb?1:0; }
+  var cmp = va<vb ? -1 : (va>vb ? 1 : 0);
+  return dir==='asc' ? cmp : -cmp;
+}
+
+function renderProductsTable(){
+  var rows = buildProductRows();
+  rows.sort(function(a,b){ return compareRows(a,b,state.sortCol,state.sortDir); });
+  state.lastRenderedProductRows = rows;
+
+  var head = document.getElementById('productsHead');
+  head.innerHTML = '';
+  PRODUCT_COLS.forEach(function(c){
+    var th = document.createElement('th');
+    var arrow = state.sortCol===c[0] ? (state.sortDir==='asc'?'▲':'▼') : '';
+    th.innerHTML = c[1] + (arrow?'<span class="arrow">'+arrow+'</span>':'');
+    th.addEventListener('click', function(){
+      if (state.sortCol === c[0]) state.sortDir = state.sortDir==='asc'?'desc':'asc';
+      else { state.sortCol = c[0]; state.sortDir = 'desc'; }
+      renderProductsTable();
+    });
+    head.appendChild(th);
+  });
+
+  var body = document.getElementById('productsBody');
+  body.innerHTML = '';
+  if (!rows.length){
+    var tr0 = document.createElement('tr');
+    var td0 = document.createElement('td');
+    td0.colSpan = PRODUCT_COLS.length;
+    td0.textContent = 'მონაცემი ვერ მოიძებნა არჩეული ფილტრით';
+    td0.style.textAlign='center'; td0.style.color='#7A6B87'; td0.style.padding='20px';
+    tr0.appendChild(td0); body.appendChild(tr0);
+    return;
+  }
+  rows.forEach(function(r){
+    var tr = document.createElement('tr');
+    if (r.flagged) tr.className = 'flagged';
+    if (state.productView==='category') tr.className += ' cat-row';
+    var trendClass = trendClassOf(r.trendPct);
+    var trendTxt = fmtTrend(r.trendPct);
+    tr.innerHTML = [
+      '<td>'+r.category+'</td>',
+      '<td>'+ (state.productView==='sku'?r.label:'—') +'</td>',
+      '<td>'+r.productName+'</td>',
+      '<td>'+fmtNum(r.units)+'</td>',
+      '<td>'+fmtGEL(r.revenue)+'</td>',
+      '<td>'+fmtGEL(r.adRevenue)+'</td>',
+      '<td>'+fmtGEL(r.spend)+'</td>',
+      '<td>'+fmtRoas(r.roas)+'</td>',
+      '<td>'+fmtNum(r.newCustomers)+'</td>',
+      '<td>'+fmtGEL(r.cac)+'</td>',
+      '<td>'+fmtGEL(r.marginAfter)+'</td>',
+      '<td class="trend '+trendClass+'">'+trendTxt+'</td>',
+      '<td><span class="badge '+(r.flagged?'on':'off')+'">'+(r.flagged?'საჭირო':'კარგი')+'</span></td>'
+    ].join('');
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- channels summary ---------- */
+function renderChannels(){
+  var rows = buildChannelRows();
+  var order = ALL_CHANNELS;
+  rows.sort(function(a,b){ return order.indexOf(a.key)-order.indexOf(b.key); });
+  var grid = document.getElementById('channelsGrid');
+  grid.innerHTML = '';
+  rows.forEach(function(r){
+    var div = document.createElement('div');
+    div.className = 'ch-card' + (r.flagged?' flagged':'');
+    var trendTxt = fmtTrend(r.trendPct);
+    div.innerHTML =
+      '<h3>'+r.key+(r.flagged?' <span class="badge on">საჭირო</span>':'')+'</h3>' +
+      row('შემოსავალი (მიკუთვ.)', fmtGEL(r.adRevenue)) +
+      row('ხარჯი', fmtGEL(r.spend)) +
+      row('ROAS', fmtRoas(r.roas)) +
+      row('ახალი მომხმარებელი', fmtNum(r.newCustomers)) +
+      row('CAC (საინფ.)', fmtGEL(r.cac)) +
+      row('ტრენდი', trendTxt);
+    grid.appendChild(div);
+  });
+  function row(label,val){ return '<div class="row"><span>'+label+'</span><b>'+val+'</b></div>'; }
+}
+
+/* ---------- CSV export ---------- */
+function exportCSV(){
+  if (!state.fileName) return;
+  var rows = state.lastRenderedProductRows;
+  var f = state.filters;
+  var lines = [];
+  lines.push('# Alta — ' + (state.productView==='sku'?'პროდუქტების':'კატეგორიის') + ' შეჯამება');
+  lines.push('# წყარო ფაილი: ' + state.fileName);
+  lines.push('# პერიოდი: ' + fmtDate(f.start) + ' - ' + fmtDate(f.end));
+  lines.push('# კატეგორია: ' + (f.categories?Object.keys(f.categories).join('|'):'ყველა'));
+  lines.push('# SKU: ' + (f.skus?Object.keys(f.skus).join('|'):'ყველა'));
+  lines.push('# არხი: ' + (f.channels?Object.keys(f.channels).join('|'):'ყველა'));
+  lines.push('# ROAS ზღვარი: ' + state.roasThreshold + 'x');
+  lines.push('# გენერირებულია: ' + new Date().toISOString());
+  lines.push('');
+  var header = ['კატეგორია','SKU','სახელი','ერთეული','შემოსავალი_GEL','მიკუთვნებული_GEL','ხარჯი_GEL','ROAS','ახალი_მომხმარებელი','CAC_GEL','მარჟა_GEL','ტრენდი_%','მონიშნული'];
+  lines.push(header.map(csvEsc).join(','));
+  rows.forEach(function(r){
+    lines.push([
+      csvEsc(r.category), csvEsc(state.productView==='sku'?r.label:''), csvEsc(r.productName),
+      r.units, r.revenue.toFixed(2), r.adRevenue.toFixed(2), r.spend.toFixed(2),
+      r.roas===null?'N/A':r.roas.toFixed(2), r.newCustomers, r.cac===null?'N/A':r.cac.toFixed(2),
+      r.marginAfter.toFixed(2), r.trendPct===null?'N/A':r.trendPct.toFixed(1), r.flagged?'დიახ':'არა'
+    ].join(','));
+  });
+  var csvContent = '﻿' + lines.join('\r\n');
+  var blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'alta-dashboard-export-' + fmtDate(state.filters.start) + '_' + fmtDate(state.filters.end) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+</script>
+</body>
+</html>
